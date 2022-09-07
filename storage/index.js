@@ -13,6 +13,8 @@ class ElasticTokenStorage {
   }
 
   async getToken(client, index, key) {
+    console.log("we are getting the token", index);
+    console.log("key", key);
     return new Promise(async (resolve, reject) => {
       try {
         let res = await client.get({
