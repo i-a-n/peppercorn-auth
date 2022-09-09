@@ -1,17 +1,11 @@
 "use strict";
 
-const jwt = require("jsonwebtoken");
-const { promisify } = require("../utils/promise");
+const crypto = require("crypto");
 const lookup = require("../utils/lookup");
 
 const requestToken = async (strategy, req, options) => {
   // Get address from addressField
-  console.log("requestToken - strat", strategy);
-  console.log("requestToken - req.body", req.body);
-  console.log("requestToken - req.query", req.query);
-  console.log("requestToken - options", options);
   const addressField = strategy.deliver.addressField;
-  console.log("addressField", addressField);
   const address = options.allowPost
     ? lookup(req.body, addressField) || lookup(req.query, addressField)
     : lookup(req.query, addressField);
@@ -37,15 +31,20 @@ const requestToken = async (strategy, req, options) => {
       );
     }
 
-    // Generate JWT
-    const createToken = promisify(jwt.sign);
-    const token = await createToken(
-      { user, iat: Math.floor(Date.now() / 1000) },
-      strategy.secret,
-      { expiresIn: strategy.ttl }
-    ).catch((err) => strategy.error(err));
+    // generate shortcode
+    const token = crypto.randomBytes(8).toString("base64url");
+    console.log("short token generated: ", token);
 
-    // Deliver JWT
+    // TODO: error handling
+    // push code + user info to elastic
+    await strategy.storage.set(token, {
+      ...user,
+      iat: Date.now(),
+      timestamp: new Date().toISOString(),
+      expiresIn: strategy.ttl,
+    });
+
+    // Deliver token
     await strategy.deliver
       .send(user, token, req)
       .catch((err) => strategy.error(err));

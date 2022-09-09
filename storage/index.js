@@ -2,7 +2,7 @@ const { Client } = require("@elastic/elasticsearch");
 
 class ElasticTokenStorage {
   constructor(options) {
-    this.tokens = new Map();
+    // hard-code index name for now
     this.index = "one-time-tokens";
     this.client = new Client({
       node: options.api_url,
@@ -12,9 +12,9 @@ class ElasticTokenStorage {
     });
   }
 
+  // helper method, just retrieves a document nicely
   async getToken(client, index, key) {
-    console.log("we are getting the token", index);
-    console.log("key", key);
+    console.log("retrieving token", key);
     return new Promise(async (resolve, reject) => {
       try {
         let res = await client.get({
@@ -22,7 +22,6 @@ class ElasticTokenStorage {
           id: key,
         });
 
-        console.log("strategy.storage.get > getToken: ", res);
         if (
           typeof res == "undefined" ||
           typeof res.body == "undefined" ||
@@ -37,12 +36,14 @@ class ElasticTokenStorage {
     });
   }
 
+  // simple setter method. used to both set a new login token and
+  // update a token to be "used".
   async set(key, val) {
     try {
       let res = await this.client.index({
         index: `${this.index}`,
         id: key,
-        body: { token: val, shortcode: "foo" },
+        body: val,
         refresh: true,
       });
       console.log("tried to set a key", res);
@@ -53,25 +54,28 @@ class ElasticTokenStorage {
     }
   }
 
+  // TODO: confirm we will never need `touch` method, and delete this
   //touch: function (sid, sess, callback) {
   //  this.set(sid, sess, callback);
   //},
 
+  // simple getter method, for now only gets tokens
   async get(key) {
     try {
-      let sess = await this.getToken(this.client, this.index, key);
-      if (!sess) {
-        console.trace("sessionstore, error getting key");
+      let token = await this.getToken(this.client, this.index, key);
+      if (!token) {
+        console.trace("sessionstore, did not find key ", key);
         return false;
       }
-      console.log("got sess", sess);
-      return sess.token;
+      console.log("got token", token);
+      return token;
     } catch (err) {
       console.trace("sessionstore, error getting key", err);
       return callback(err);
     }
   }
 
+  // TODO: hook this up, confirm this works
   async delete(key) {
     this.client.delete(
       {

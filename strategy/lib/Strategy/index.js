@@ -1,32 +1,34 @@
-'use strict';
+"use strict";
 
-const acceptToken = require('./acceptToken');
-const requestToken = require('./requestToken');
-const tokenStorage = require('../storage');
-const { deliver: validate } = require('../utils/validate');
+const acceptToken = require("./acceptToken");
+const requestToken = require("./requestToken");
+const { deliver: validate } = require("../utils/validate");
 
 class Strategy {
   constructor(
     {
-      storage = tokenStorage, // default: In-memory storage
+      storage = null,
       ttl = 60 * 60 * 24 * 7, // default: 7Days
       secret,
-      deliver
+      deliver,
     },
     verify
   ) {
+    if (!storage) {
+      throw new Error("ZeroStrategy requires a storage module");
+    }
     if (!deliver) {
-      throw new Error('ZeroStrategy requires a deliver module');
+      throw new Error("ZeroStrategy requires a deliver module");
     } else if (!validate(deliver)) {
-      throw new Error('ZeroStrategy requires a valid deliver module');
+      throw new Error("ZeroStrategy requires a valid deliver module");
     }
     if (!secret) {
-      throw new Error('ZeroStrategy requires a secret');
+      throw new Error("ZeroStrategy requires a secret");
     }
     if (!verify) {
-      throw new Error('ZeroStrategy requires a verify callback');
+      throw new Error("ZeroStrategy requires a verify callback");
     }
-    this.name = 'zero';
+    this.name = "zero";
     this.storage = storage;
     this.ttl = ttl;
     this.secret = secret;
@@ -35,28 +37,28 @@ class Strategy {
   }
 
   async authenticate(req, options = {}) {
-    console.log('authenticate in module');
+    console.log("authenticate in module");
     const sanitizedOptions = {
-      action: 'acceptToken',
+      action: "acceptToken",
       allowPost: true,
-      ...options
+      ...options,
     };
 
     // Request token logic
     // =====================================
-    if (sanitizedOptions.action === 'requestToken') {
-      console.log('reqquestToken');
+    if (sanitizedOptions.action === "requestToken") {
+      console.log("reqquestToken");
       return requestToken(this, req, sanitizedOptions);
     }
 
     // Accept token logic
     // =====================================
-    if (sanitizedOptions.action === 'acceptToken') {
-      console.log('in the accept token route');
+    if (sanitizedOptions.action === "acceptToken") {
+      console.log("in the accept token route");
       return acceptToken(this, req, sanitizedOptions);
     }
 
-    return this.error(new Error('Unknown action'));
+    return this.error(new Error("Unknown action"));
   }
 }
 

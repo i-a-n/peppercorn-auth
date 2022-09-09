@@ -1,9 +1,7 @@
-'use strict';
+"use strict";
 
-const Strategy = require('./lib/Strategy');
-const email = require('./lib/deliver');
+const Strategy = require("./lib/Strategy");
 
 module.exports = {
   Strategy,
-  email
 };
